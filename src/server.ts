@@ -1,5 +1,4 @@
 import express, { Express, Request, Response } from 'express'
-import { initializeBreeJobs } from './config/cronJobs'
 import userRegistration from './api/userRegistration'
 import dotenv from 'dotenv'
 import { ExpressAdapter } from '@bull-board/express'
@@ -9,6 +8,7 @@ import { createBullBoard } from '@bull-board/api'
 import { BullAdapter } from '@bull-board/api/bullAdapter'
 import { worker } from './workers/emailWorker'
 import { emailQueue } from './queues/config'
+import { scheduleEmailForUser } from './services/schedulerService'
 
 dotenv.config()
 
@@ -30,8 +30,8 @@ app.use('/admin/queues', serverAdapter.getRouter())
 // User registration endpoint
 app.use('/api', userRegistration)
 
-// Initialize Bree jobs on server start
-initializeBreeJobs()
+// Initialize jobs on server start
+scheduleEmailForUser()
 
 worker.on('completed', job => {
   console.log(`${job.id} has completed!`)

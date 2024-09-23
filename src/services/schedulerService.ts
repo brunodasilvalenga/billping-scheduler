@@ -1,56 +1,64 @@
 // src/services/schedulerService.ts
-import cron from 'node-cron'
-import { userEventEmitter } from '../events/userEvents'
+import { Cron, scheduledJobs } from 'croner'
 import { getNextEmailSchedule } from '../utils/dateUtils'
-import { type User } from '../types/user'
 import { emailQueue } from '../queues/config'
-
-// Group users by timezone and digest type
-function groupUsersByTimezone(users: User[]): Record<string, User[]> {
-  return users.reduce((acc, user) => {
-    const key = `${user.timezone}|${user.digestFrequency}`
-    if (!acc[key]) {
-      acc[key] = []
-    }
-    acc[key].push(user)
-    return acc
-  }, {} as Record<string, User[]>)
-}
+import allTimezones from '../utils/timezone'
+import { getUsers } from './usersService'
+import { DigestFrequency } from '../types/user'
 
 // Schedule emails for a single user (used when a new user is added)
-export function scheduleEmailForUser(users: User[]) {
-  const groupedUsers = groupUsersByTimezone(users)
-
-  Object.keys(groupedUsers).forEach(key => {
-    const [timezone, digestFrequency] = key.split('|')
-    const timezoneUsers = groupedUsers[key]
-
+export function scheduleEmailForUser() {
+  Object.keys(allTimezones).forEach(timezone => {
     // Calculate the next schedule time (8 AM local time for this timezone)
-    const nextSchedule = getNextEmailSchedule(timezone, digestFrequency === 'weekly' ? timezoneUsers[0].preferredDayForWeekly : undefined)
-    const cronTime = `${nextSchedule.getMinutes()} ${nextSchedule.getHours()} * * ${digestFrequency === 'weekly' ? nextSchedule.getDay() : '*'}`
+    const weeklyNextSchedule = getNextEmailSchedule(timezone, 1)
+    const weeklyCronTime = `${weeklyNextSchedule.getMinutes()} ${weeklyNextSchedule.getHours()} * * ${weeklyNextSchedule.getDay()}`
+    const weeklyJobName = `${timezone}|${DigestFrequency.Weekly}`
+    const weeklyJob = scheduledJobs.find(j => j.name === weeklyJobName)
 
-    cron.schedule(
-      cronTime,
-      async () => {
-        console.log(`[Cron] - Sending job to queue: Email job for timezone: ${timezone}, digest: ${digestFrequency}`)
-        timezoneUsers.forEach(async user => {
+    // Check if a job already exists for this timezone and digest frequency
+    if (!weeklyJob) {
+      const cron = Cron(weeklyCronTime, { name: weeklyJobName, timezone }, () => {
+        console.log(`[Cron] - Trigger job to queue - Email job for timezone: ${timezone}, digest: ${DigestFrequency.Weekly}`)
+        const users = getUsers({ timezone, digestFrequency: DigestFrequency.Weekly })
+        if (!users.length) {
+          console.log(`[Cron] - No users found for timezone: ${timezone}, digest: ${DigestFrequency.Weekly}`)
+          return
+        }
+        users.forEach(async user => {
           await emailQueue.add(user.id, {
             user,
           })
         })
-      },
-      {
-        scheduled: true,
-        timezone,
-      },
-    )
+      })
+      if (cron.nextRun()) {
+        console.log(`[Cron] - Next run for ${weeklyJobName} is ${cron.nextRun()}`)
+      }
+    }
 
-    console.log(`Scheduled email job for timezone: ${timezone}, digest: ${digestFrequency}, at ${cronTime}`)
+    // Calculate the next schedule time (8 AM local time for this timezone)
+    const dailyNextSchedule = getNextEmailSchedule(timezone, 1)
+    const dailyCronTime = `${dailyNextSchedule.getMinutes()} ${dailyNextSchedule.getHours()} * * *`
+    const dailyJobName = `${timezone}|${DigestFrequency.Daily}`
+    const dailyJob = scheduledJobs.find(j => j.name === dailyJobName)
+
+    // Check if a job already exists for this timezone and digest frequency
+    if (!dailyJob) {
+      const cron = Cron(dailyCronTime, { name: dailyJobName, timezone }, () => {
+        console.log(`[Cron] - Trigger job to queue - Email job for timezone: ${timezone}, digest: ${DigestFrequency.Daily}`)
+        const users = getUsers({ timezone, digestFrequency: DigestFrequency.Daily })
+        if (!users.length) {
+          console.log(`[Cron] - No users found for timezone: ${timezone}, digest: ${DigestFrequency.Daily}`)
+          return
+        }
+        users.forEach(async user => {
+          await emailQueue.add(user.id, {
+            user,
+          })
+        })
+      })
+      if (cron.nextRun()) {
+        console.log(`[Cron] - Next run for ${dailyJobName} is ${cron.nextRun()}`)
+      }
+    }
   })
 }
-
-// Listen for the 'newUser' event and schedule the user's digest email
-userEventEmitter.on('newUser', (user: User) => {
-  console.log(`New user event received: ${user.email}`)
-  // scheduleEmailForUser(user)
-})

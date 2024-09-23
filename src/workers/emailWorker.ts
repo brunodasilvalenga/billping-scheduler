@@ -2,19 +2,24 @@ import { Worker, Job } from 'bullmq'
 import IORedis from 'ioredis'
 import { sendEmail } from '../services/emailService'
 import { emailQueue, redisConnection } from '../queues/config'
+import { DigestFrequency } from '../types/user'
 
 export const worker = new Worker(
   emailQueue.name,
   async (job: Job) => {
     console.log(`${job.id} is processing...`)
-    const { email, digestType } = job.data.user
-    const subject = digestType === 'daily' ? 'Daily Billing Digest' : 'Weekly Billing Digest'
-    const content = `<p>Here are your ${digestType} billing insights.</p>` // Replace with actual billing data
+    const { email, digestType, timezone } = job.data.user
+    const subject = digestType === DigestFrequency.Daily ? 'Daily Billing Digest' : 'Weekly Billing Digest'
+    const content = `<p>Here are your ${digestType} billing insights.</p></br><p>Timezone: ${timezone}</p>`
 
-    // await sendEmail(email, subject, content)
-    console.log(`Processed email for ${email}`)
+    await sendEmail(email, subject, content)
   },
-  { connection: redisConnection },
+  {
+    connection: redisConnection,
+    removeOnComplete: {
+      age: 3600, // keep up to 1 hour
+    },
+  },
 )
 
 console.log('Worker started!')
