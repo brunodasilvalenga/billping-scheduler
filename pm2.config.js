@@ -1,5 +1,5 @@
 module.exports = {
   name: "dailydiggest-shceduler",
   script: "src/server.ts",
-  interpreter: "~/.bun/bin/bun",
+  interpreter: "/root/.bun/bin/bun",
 };
