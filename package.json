@@ -1,9 +1,8 @@
 {
   "type": "commonjs",
   "scripts": {
-    "build": "npx tsc",
-    "start": "node dist/index.js",
-    "dev": "npx tsx watch src/server.ts"
+    "start": "bun run index.js",
+    "dev": "bun run --watch src/index.ts"
   },
   "dependencies": {
     "@bull-board/api": "^5.23.0",
