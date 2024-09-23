@@ -1,7 +1,10 @@
 import { Queue } from 'bullmq'
 import IORedis from 'ioredis'
+import dotenv from 'dotenv'
 
-export const redisConnection = new IORedis('localhost:6379', { maxRetriesPerRequest: null })
+dotenv.config()
+
+export const redisConnection = new IORedis(process.env.REDIS_URL!, { maxRetriesPerRequest: null })
 
 // Create and export email queue
 export const emailQueue = new Queue('emailSending', { connection: redisConnection })
