@@ -6,10 +6,9 @@ import allTimezones from '../utils/timezone'
 import { getUsers } from './usersService'
 import { DigestFrequency } from '../types/user'
 
-// Schedule emails for a single user (used when a new user is added)
 export function scheduleEmailForUser() {
   Object.keys(allTimezones).forEach(timezone => {
-    // Calculate the next schedule time (8 AM local time for this timezone)
+    // Calculate the next schedule time (9 AM local time for this timezone)
     const weeklyNextSchedule = getNextEmailSchedule(timezone, 1)
     const weeklyCronTime = `${weeklyNextSchedule.getMinutes()} ${weeklyNextSchedule.getHours()} * * ${weeklyNextSchedule.getDay()}`
     const weeklyJobName = `${timezone}|${DigestFrequency.Weekly}`
@@ -35,7 +34,7 @@ export function scheduleEmailForUser() {
       }
     }
 
-    // Calculate the next schedule time (8 AM local time for this timezone)
+    // Calculate the next schedule time (9 AM local time for this timezone)
     const dailyNextSchedule = getNextEmailSchedule(timezone, 1)
     const dailyCronTime = `${dailyNextSchedule.getMinutes()} ${dailyNextSchedule.getHours()} * * *`
     const dailyJobName = `${timezone}|${DigestFrequency.Daily}`

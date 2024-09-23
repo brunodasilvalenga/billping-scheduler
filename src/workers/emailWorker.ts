@@ -1,5 +1,4 @@
 import { Worker, Job } from 'bullmq'
-// import IORedis from 'ioredis'
 import { sendEmail } from '../services/emailService'
 import { emailQueue } from '../queues/config'
 import { DigestFrequency } from '../types/user'
