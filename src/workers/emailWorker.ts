@@ -1,8 +1,9 @@
 import { Worker, Job } from 'bullmq'
-import IORedis from 'ioredis'
+// import IORedis from 'ioredis'
 import { sendEmail } from '../services/emailService'
-import { emailQueue, redisConnection } from '../queues/config'
+import { emailQueue } from '../queues/config'
 import { DigestFrequency } from '../types/user'
+import redis from '../utils/redis'
 
 export const worker = new Worker(
   emailQueue.name,
@@ -15,7 +16,7 @@ export const worker = new Worker(
     await sendEmail(email, subject, content)
   },
   {
-    connection: redisConnection,
+    connection: redis,
     removeOnComplete: {
       age: 3600, // keep up to 1 hour
     },
