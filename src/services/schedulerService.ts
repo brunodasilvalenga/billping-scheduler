@@ -28,6 +28,7 @@ export function scheduleEmailForUser() {
             user,
           })
         })
+        emailQueue.disconnect()
       })
       if (cron.nextRun()) {
         console.log(`[Cron] - Next run for ${weeklyJobName} is ${cron.nextRun()}`)
@@ -54,6 +55,7 @@ export function scheduleEmailForUser() {
             user,
           })
         })
+        emailQueue.disconnect()
       })
       if (cron.nextRun()) {
         console.log(`[Cron] - Next run for ${dailyJobName} is ${cron.nextRun()}`)
