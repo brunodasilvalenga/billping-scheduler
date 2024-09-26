@@ -17,7 +17,7 @@ export function scheduleEmailForUser() {
 
       // Check if a job already exists for this timezone and digest frequency
       if (!weeklyJob) {
-        const cron = Cron(weeklyCronTime, { name: weeklyJobName, timezone }, () => {
+        const cron = Cron(weeklyCronTime, { name: weeklyJobName, timezone }, async () => {
           try {
             console.log(`[Cron] - Trigger job to queue - Email job for timezone: ${timezone}, digest: ${DigestFrequency.Weekly}`)
             const users = getUsers({ timezone, digestFrequency: DigestFrequency.Weekly })
@@ -25,17 +25,19 @@ export function scheduleEmailForUser() {
               console.log(`[Cron] - No users found for timezone: ${timezone}, digest: ${DigestFrequency.Weekly}`)
               return
             }
-            users.forEach(async user => {
-              try {
-                await emailQueue.add(user.id, { user })
-              } catch (error) {
-                console.error(`[Cron] - Error adding user ${user.id} to email queue:`, error)
-              }
-            })
+            try {
+              const addPromises = users.map(user =>
+                emailQueue.add(user.id, { user }).catch(error => console.error(`[Cron] - Error adding user ${user.id} to email queue:`, error)),
+              )
+
+              await Promise.all(addPromises)
+            } catch (error) {
+              console.error(`[Cron] - Error processing users:`, error)
+            } finally {
+              emailQueue.disconnect()
+            }
           } catch (error) {
             console.error(`[Cron] - Error in weekly job for timezone ${timezone}:`, error)
-          } finally {
-            emailQueue.disconnect()
           }
         })
 
@@ -52,7 +54,7 @@ export function scheduleEmailForUser() {
 
       // Check if a job already exists for this timezone and digest frequency
       if (!dailyJob) {
-        const cron = Cron(dailyCronTime, { name: dailyJobName, timezone }, () => {
+        const cron = Cron(dailyCronTime, { name: dailyJobName, timezone }, async () => {
           try {
             console.log(`[Cron] - Trigger job to queue - Email job for timezone: ${timezone}, digest: ${DigestFrequency.Daily}`)
             const users = getUsers({ timezone, digestFrequency: DigestFrequency.Daily })
@@ -60,19 +62,18 @@ export function scheduleEmailForUser() {
               console.log(`[Cron] - No users found for timezone: ${timezone}, digest: ${DigestFrequency.Daily}`)
               return
             }
-            users.forEach(async user => {
-              try {
-                await emailQueue.add(user.id, {
-                  user,
-                })
-              } catch (error) {
-                console.error(`[Cron] - Error adding user ${user.id} to email queue:`, error)
-              }
-            })
+            try {
+              const addPromises = users.map(user =>
+                emailQueue.add(user.id, { user }).catch(error => console.error(`[Cron] - Error adding user ${user.id} to email queue:`, error)),
+              )
+              await Promise.all(addPromises)
+            } catch (error) {
+              console.error(`[Cron] - Error processing users:`, error)
+            } finally {
+              await emailQueue.disconnect()
+            }
           } catch (error) {
             console.error(`[Cron] - Error in daily job for timezone ${timezone}:`, error)
-          } finally {
-            emailQueue.disconnect()
           }
         })
         if (cron.nextRun()) {
