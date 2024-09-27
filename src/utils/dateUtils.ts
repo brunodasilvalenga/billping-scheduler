@@ -5,7 +5,7 @@ export function getNextEmailSchedule(timezone: string, preferredDay?: number): D
   const now = new Date()
   const zonedNow = new TZDate(now, timezone)
 
-  let schedule = setHours(setMinutes(zonedNow, 19), 11)
+  let schedule = setHours(setMinutes(zonedNow, 0), 9)
 
   if (preferredDay !== undefined) {
     schedule = setDay(schedule, preferredDay, { weekStartsOn: 0 })
