@@ -1,10 +1,10 @@
 // src/services/schedulerService.ts
 import { Cron, scheduledJobs } from 'croner'
 import { getNextEmailSchedule } from '../utils/dateUtils'
-import { emailQueue } from '../queues/config'
 import allTimezones from '../utils/timezone'
 import { getUsers } from './usersService'
 import { DigestFrequency } from '../types/user'
+import { sendEmail } from './emailService'
 
 export function scheduleEmailForUser() {
   Object.keys(allTimezones).forEach(timezone => {
@@ -25,16 +25,17 @@ export function scheduleEmailForUser() {
               console.log(`[Cron] - No users found for timezone: ${timezone}, digest: ${DigestFrequency.Weekly}`)
               return
             }
-            try {
-              const addPromises = users.map(user =>
-                emailQueue.add(user.id, { user }).catch(error => console.error(`[Cron] - Error adding user ${user.id} to email queue:`, error)),
-              )
-
-              await Promise.all(addPromises)
-            } catch (error) {
-              console.error(`[Cron] - Error processing users:`, error)
-            } finally {
-              emailQueue.disconnect()
+            for (const user of users) {
+              try {
+                console.info(`[Job] - Sending email to user: [ ID: ${user.id} - Email: ${user.email} ] ...`)
+                const { email, digestFrequency, timezone } = user
+                const subject = digestFrequency === DigestFrequency.Daily ? 'Daily Billing Digest' : 'Weekly Billing Digest'
+                const content = `<p>Here are your ${digestFrequency} billing insights.</p></br><p>Timezone: ${timezone}</p>`
+                await sendEmail(email, subject, content)
+                console.info(`[Job] - Email sent to user: [ ID: ${user.id} - Email: ${user.email} ].`)
+              } catch (error) {
+                console.error(`[Cron] - Error sending email to user:`, error)
+              }
             }
           } catch (error) {
             console.error(`[Cron] - Error in weekly job for timezone ${timezone}:`, error)
@@ -62,15 +63,18 @@ export function scheduleEmailForUser() {
               console.log(`[Cron] - No users found for timezone: ${timezone}, digest: ${DigestFrequency.Daily}`)
               return
             }
-            try {
-              const addPromises = users.map(user =>
-                emailQueue.add(user.id, { user }).catch(error => console.error(`[Cron] - Error adding user ${user.id} to email queue:`, error)),
-              )
-              await Promise.all(addPromises)
-            } catch (error) {
-              console.error(`[Cron] - Error processing users:`, error)
-            } finally {
-              await emailQueue.disconnect()
+
+            for (const user of users) {
+              try {
+                console.info(`[Job] - Sending email to user: [ ID: ${user.id} - Email: ${user.email} ] ...`)
+                const { email, digestFrequency, timezone } = user
+                const subject = digestFrequency === DigestFrequency.Daily ? 'Daily Billing Digest' : 'Weekly Billing Digest'
+                const content = `<p>Here are your ${digestFrequency} billing insights.</p></br><p>Timezone: ${timezone}</p>`
+                await sendEmail(email, subject, content)
+                console.info(`[Job] - Email sent to user: [ ID: ${user.id} - Email: ${user.email} ].`)
+              } catch (error) {
+                console.error(`[Cron] - Error sending email to user:`, error)
+              }
             }
           } catch (error) {
             console.error(`[Cron] - Error in daily job for timezone ${timezone}:`, error)
