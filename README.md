@@ -1,1 +1,1 @@
-# dailydigest-scheduler
+# billping-scheduler
