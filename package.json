@@ -1,21 +1,32 @@
 {
   "type": "commonjs",
   "scripts": {
-    "start": "bun run index.js",
-    "dev": "bun run --watch src/index.ts"
+    "start": "bun run src/index.ts",
+    "dev": "bun run --watch src/index.ts",
+    "email": "email dev --dir src/templates/emails"
   },
   "dependencies": {
-    "@date-fns/tz": "^1.1.0",
+    "@aws-sdk/client-cost-explorer": "^3.696.0",
+    "@aws-sdk/credential-providers": "^3.696.0",
+    "@date-fns/tz": "^1.2.0",
+    "@libsql/client": "^0.14.0",
+    "@react-email/components": "0.0.28",
+    "@t3-oss/env-core": "^0.11.1",
     "bullmq": "^5.13.2",
     "croner": "^8.1.1",
     "cronitor": "^2.4.1",
     "date-fns": "^4.1.0",
     "dotenv": "^16.4.5",
-    "resend": "^4.0.0"
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "resend": "^4.0.0",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@types/cronitor": "^2.3.0",
     "@types/node": "^22.5.5",
+    "@types/react": "^18.3.12",
+    "react-email": "3.0.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.6.2"
   }
